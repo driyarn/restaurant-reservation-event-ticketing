@@ -107,3 +107,13 @@ If a 500 error persists after these checks, inspect the Node terminal for the un
 
 ### Quick regression checks
 Run `npm test` and `npm start`. Try submitting only “Maria” as the guest name; the form should say a first name and surname are required. “Maria Santos” is accepted. In the phone input, type `9171234567`; it should display `917 123 4567` next to fixed `+63`. Deleting digits or using an incomplete number should block submission. Search reservations by name and ID, then verify searching an email address or phone number alone does **not** match a row.
+
+## Unique email for reservations (October 2026)
+
+Each email address can now belong to **only one reservation record** (including cancelled reservations). An existing reservation can be edited while keeping its own email; reusing another reservation's email returns **HTTP 409** with `This email is already used by another reservation. Please use a different email address.` Email values are trimmed and stored in lowercase.
+
+**New databases:** `db/schema.sql` includes the `uq_reservations_email` unique index.
+
+**Existing databases:** Importing `db/schema.sql` again does **not** change an existing reservations table because it uses `CREATE TABLE IF NOT EXISTS`. You must apply `db/migrations/001_unique_reservation_email.sql` instead. **Back up the database first**, run its duplicate-email audit query, resolve conflicting emails manually without deleting valid reservations, then normalize email values and add the unique index. Do not rerun the `ALTER TABLE` if the index already exists.
+
+Test by creating one reservation, attempting a second reservation with the same email (including different letter case), and editing another reservation to that email: both duplicates should return 409. Editing the first reservation with its own existing email should succeed. This is the chosen lab requirement; for a future production app, multiple visits by the same customer would normally be modeled as separate reservations linked to a customer account instead.
