@@ -97,3 +97,13 @@ If a 500 error persists after these checks, inspect the Node terminal for the un
 4. Test `+639171234567` (accepted) and `09171234567`, `+6391712`, `+6391712345678` (rejected).
 5. Open **Manage Reservations**, load records with the admin key, search by guest name or ID, then change the status filter.
 6. If you get an error, inspect `/api/health` and the server logs. These steps require a running MySQL instance and are not assertions that live integration tests have already passed.
+
+## Reservation form usability refinements
+
+- The country code **+63** is displayed in a fixed prefix beside the mobile input. Guests enter only `917 123 4567`; the browser formats as `XXX XXX XXXX` and sends the API the canonical `+639171234567`. The server still rejects invalid numbers.
+- Full Name requires **first name and surname**. A single name or invalid name characters are rejected in the browser with an inline error message and rejected on the API by Zod validation. Multi-part surnames and accented letters are allowed.
+- Manage Reservations search checks only reservation **ID, guest name, date/time, and status**. Email, phone, and table are no longer searched. Status also has a separate filter.
+- The SQL database does not require a migration for these UI and validation changes. Existing older reservation records are not automatically renamed or modified.
+
+### Quick regression checks
+Run `npm test` and `npm start`. Try submitting only “Maria” as the guest name; the form should say a first name and surname are required. “Maria Santos” is accepted. In the phone input, type `9171234567`; it should display `917 123 4567` next to fixed `+63`. Deleting digits or using an incomplete number should block submission. Search reservations by name and ID, then verify searching an email address or phone number alone does **not** match a row.
