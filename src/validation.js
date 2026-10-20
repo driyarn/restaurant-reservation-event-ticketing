@@ -1,6 +1,6 @@
 const {z}=require('zod');
 const reservationSchema=z.object({
- customer_name:z.string().trim().min(2).max(100),
+ customer_name:z.string().trim().min(3).max(100).refine(name=>{const parts=name.split(/\s+/).filter(Boolean);return parts.length>=2&&parts.every(p=>/^[\p{L}\p{M}][\p{L}\p{M}'’.-]*$/u.test(p));},'Enter both your first name and surname (at least two names).'),
  email:z.string().trim().email().max(254),
  phone:z.string().trim().regex(/^\+639\d{9}$/, 'Use +639XXXXXXXXX (13 characters), a valid Philippine mobile number.'),
  table_id:z.coerce.number().int().positive(),
