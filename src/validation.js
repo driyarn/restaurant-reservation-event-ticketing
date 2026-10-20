@@ -2,7 +2,7 @@ const {z}=require('zod');
 const reservationSchema=z.object({
  customer_name:z.string().trim().min(2).max(100),
  email:z.string().trim().email().max(254),
- phone:z.string().trim().regex(/^[+0-9()\-\s]{7,30}$/),
+ phone:z.string().trim().regex(/^\+639\d{9}$/, 'Use +639XXXXXXXXX (13 characters), a valid Philippine mobile number.'),
  table_id:z.coerce.number().int().positive(),
  party_size:z.coerce.number().int().min(1).max(20),
  reserved_at:z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/).refine(s=>{const d=new Date(s+':00+08:00');return !Number.isNaN(d.getTime())&&d.toISOString().slice(0,16)!=='NaN'&&d.getTime()>Date.now();},'Reservation must be in the future (Philippine time)'),
