@@ -6,3 +6,8 @@ test('invalid party size rejected',()=>assert.equal(reservationSchema.safeParse(
 test('past reservations rejected',()=>assert.equal(reservationSchema.safeParse({...valid,reserved_at:'2020-01-01T12:00'}).success,false));
 test('unexpected fields rejected',()=>assert.equal(reservationSchema.safeParse({...valid,is_admin:true}).success,false));
 test('invalid event ticket quantity rejected',()=>assert.equal(registrationSchema.safeParse({event_id:1,guest_name:'Maria Santos',guest_email:'maria@example.com',quantity:11}).success,false));
+
+for(const phone of ['09171234567','639171234567','+63917123456','+6391712345678','+638171234567','+63917abc4567','+63 9171234567','+1 (917) 123-4567','+639','+6391712-4567']){
+ test('reject invalid PH number '+phone,()=>assert.equal(reservationSchema.safeParse({...valid,phone}).success,false));
+}
+test('accept valid Philippine mobile number',()=>assert.equal(reservationSchema.safeParse({...valid,phone:'+639171234567'}).success,true));
