@@ -58,3 +58,28 @@ curl -X POST http://localhost:3000/api/reservations \
 Run `npm test` to run validation unit tests. Follow `docs/TESTING.md` for live MySQL CRUD integration checks. Local syntax/unit verification does **not** establish successful MySQL connectivity until tested with a running server. Ticket reservations are not paid tickets; payment processing, email delivery, robust customer identity, and full production hardening are outside this Week 10–11 prototype scope. The frontend is an adapted Figma dashboard, not a pixel-perfect replication of every Figma page.
 
 **Figma design:** https://www.figma.com/design/W5E08KkbtWpykLlkKqdNxH/Restaurant-Reservation-with-Event-Registration-and-Ticketing-Systrem?node-id=0-1
+
+## Troubleshooting: empty table dropdown / Manage Reservations fails
+
+These are connected to the same MySQL schema. First open `http://localhost:3000/api/health` after starting Node. It should respond with `{"status":"ok","database":"connected","schema":"ready"}`. If it returns `setup_required` with a list of missing tables, import the schema into the **same database configured by DB_NAME**:
+
+```bash
+mysql -u root -p < db/schema.sql
+```
+
+Restart `npm start`. Check seed records:
+
+```sql
+USE restaurant_reservation;
+SHOW TABLES;
+SELECT id, label, seats, active FROM dining_tables;
+SELECT COUNT(*) FROM reservations;
+```
+
+The tables dropdown should contain Garden 1, Garden 2, Main Hall 1, and Family Table. If the tables were previously created but no seed rows exist, rerun `db/schema.sql`, which uses upserts for the sample dining tables.
+
+If the health response reports an access or connection failure, inspect `.env` locally (DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD), ensure MySQL is running, and grant the application user the required privileges on the configured database. Never share your admin key or database password in screenshots or issues.
+
+Manage Reservations additionally requires `ADMIN_API_KEY` to be set in the server's `.env` with a length of at least 32 characters. Restart the Node server after changing `.env`. Paste the **same exact key** in the Manage Reservations input (the key is never stored in GitHub). A wrong key returns 401; an unconfigured key returns 503; and an empty reservations table should return `{"data":[]}`, not an error.
+
+If a 500 error persists after these checks, inspect the Node terminal for the underlying error code and message. The API intentionally does not expose raw SQL or credentials to the browser.
