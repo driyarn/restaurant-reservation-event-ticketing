@@ -11,3 +11,10 @@ for(const phone of ['09171234567','639171234567','+63917123456','+6391712345678'
  test('reject invalid PH number '+phone,()=>assert.equal(reservationSchema.safeParse({...valid,phone}).success,false));
 }
 test('accept valid Philippine mobile number',()=>assert.equal(reservationSchema.safeParse({...valid,phone:'+639171234567'}).success,true));
+
+for(const name of ['Maria','Santos',' Maria ','Maria123','Maria @Santos']){
+ test('reject incomplete/invalid full name '+name,()=>assert.equal(reservationSchema.safeParse({...valid,customer_name:name}).success,false));
+}
+for(const name of ['Maria Santos','Ana Marie Dela Cruz',"Jean-Pierre O'Neil",'José García']){
+ test('accept complete full name '+name,()=>assert.equal(reservationSchema.safeParse({...valid,customer_name:name}).success,true));
+}
