@@ -1,1 +1,1 @@
-# restaurant-reservation-event-ticketing
+Restaurant Reservation Project
