@@ -83,3 +83,17 @@ If the health response reports an access or connection failure, inspect `.env` l
 Manage Reservations additionally requires `ADMIN_API_KEY` to be set in the server's `.env` with a length of at least 32 characters. Restart the Node server after changing `.env`. Paste the **same exact key** in the Manage Reservations input (the key is never stored in GitHub). A wrong key returns 401; an unconfigured key returns 503; and an empty reservations table should return `{"data":[]}`, not an error.
 
 If a 500 error persists after these checks, inspect the Node terminal for the underlying error code and message. The API intentionally does not expose raw SQL or credentials to the browser.
+
+## Reservation improvements (October 2026)
+
+- **Manage Reservations:** Search records by reservation ID, guest name, email, phone number, table ID, time or status; filter by Confirmed or Cancelled. Search is client-side over the most recent 100 records loaded by the existing admin endpoint, so older reservations may not appear until server-side pagination/search is implemented.
+- **Check table availability:** The reservation form now queries `GET /api/availability?reserved_at=2027-12-18T19:00&duration_minutes=90&party_size=2`. Each active table is marked **Available** or **Unavailable / occupied** and unavailable tables are disabled. Choose date, guest count and duration before a table. Updating a reservation ignores its own booking with `exclude_id`. The server independently checks collisions within a transaction when saving.
+- **Philippine mobile validation:** Phone numbers must use the strict international format `+639XXXXXXXXX` (13 characters; 9 digits after `+639`). Example: `+639171234567`. The API rejects local `09...`, incomplete numbers, non-PH codes, spaces, hyphens, unsupported symbols, or extra digits with a 400 response.
+
+### Manual verification
+1. Run `npm test` (new invalid mobile format cases included), start MySQL and `npm start`.
+2. Open **Reservation**, choose a future time and guest count. The dropdown should show available and unavailable table labels.
+3. Save a booking, then open the dialog again using the same table/time: that table should display **Unavailable / occupied** and be disabled. Another non-overlapping time should enable it again.
+4. Test `+639171234567` (accepted) and `09171234567`, `+6391712`, `+6391712345678` (rejected).
+5. Open **Manage Reservations**, load records with the admin key, search by guest name or ID, then change the status filter.
+6. If you get an error, inspect `/api/health` and the server logs. These steps require a running MySQL instance and are not assertions that live integration tests have already passed.
