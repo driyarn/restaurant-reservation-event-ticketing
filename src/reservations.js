@@ -22,4 +22,4 @@ function createReservationRouter(express,pool){
  router.delete('/:id',async(req,res,next)=>{const id=idSchema.safeParse(req.params.id);if(!id.success)return res.status(400).json({error:'Invalid reservation ID'});const conn=await pool.getConnection().catch(next);if(!conn)return;try{await conn.beginTransaction();await conn.execute('SELECT id FROM reservation_code_lock WHERE id=1 FOR UPDATE');const [result]=await conn.execute("UPDATE reservations SET status='cancelled',display_code=NULL WHERE id=? AND status='confirmed'",[id.data]);if(!result.affectedRows){await conn.rollback();return res.status(404).json({error:'Active reservation not found'})}await conn.commit();res.json({message:'Reservation cancelled and display code released',id:id.data})}catch(e){await conn.rollback();next(e)}finally{conn.release()}});
  return router;
 }
-module.exports={createReservationRouter};
+module.exports={createReservationRouter,initials,allocateCode};
