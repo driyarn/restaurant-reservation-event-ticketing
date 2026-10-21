@@ -10,3 +10,11 @@ INSERT INTO events(id,title,description,starts_at,venue,ticket_capacity,ticket_p
 -- Serialize human-readable code assignment across concurrent requests.
 CREATE TABLE IF NOT EXISTS reservation_code_lock (id TINYINT PRIMARY KEY) ENGINE=InnoDB;
 INSERT IGNORE INTO reservation_code_lock(id) VALUES(1);
+
+-- Shared counter across all names. Freed numbers are reused newest-first.
+CREATE TABLE IF NOT EXISTS reservation_code_state (id TINYINT PRIMARY KEY,next_number BIGINT UNSIGNED NOT NULL) ENGINE=InnoDB;
+INSERT IGNORE INTO reservation_code_state (id,next_number) VALUES (1,1);
+CREATE TABLE IF NOT EXISTS reservation_released_numbers (
+ release_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+ sequence_number BIGINT UNSIGNED NOT NULL UNIQUE
+) ENGINE=InnoDB;
