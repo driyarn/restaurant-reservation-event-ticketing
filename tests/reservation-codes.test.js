@@ -1,0 +1,4 @@
+const {test}=require('node:test');const assert=require('node:assert/strict');const {initials,allocateCode}=require('../src/reservations');
+test('first and last name form initials',()=>{assert.equal(initials('John Doe'),'JD');assert.equal(initials('Maria Ana Santos'),'MS')});
+test('allocator selects lowest available sequence and reuses gaps',async()=>{const sqlCalls=[];const db={execute:async(sql,args)=>{sqlCalls.push(sql);if(sql.includes('FROM reservation_code_lock'))return [[{id:1}]];return [[{display_code:'JD-001'},{display_code:'JD-003'}]]}};const code=await allocateCode(db,'John Doe');assert.equal(code,'JD-002');assert.ok(sqlCalls[0].includes('FOR UPDATE'))});
+test('allocator starts at 001 when no active codes exist',async()=>{const db={execute:async(sql)=>sql.includes('reservation_code_lock')?[[{id:1}]]:[[]]};assert.equal(await allocateCode(db,'John Doe'),'JD-001')});
