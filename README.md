@@ -117,3 +117,21 @@ Each email address can now belong to **only one reservation record** (including 
 **Existing databases:** Importing `db/schema.sql` again does **not** change an existing reservations table because it uses `CREATE TABLE IF NOT EXISTS`. You must apply `db/migrations/001_unique_reservation_email.sql` instead. **Back up the database first**, run its duplicate-email audit query, resolve conflicting emails manually without deleting valid reservations, then normalize email values and add the unique index. Do not rerun the `ALTER TABLE` if the index already exists.
 
 Test by creating one reservation, attempting a second reservation with the same email (including different letter case), and editing another reservation to that email: both duplicates should return 409. Editing the first reservation with its own existing email should succeed. This is the chosen lab requirement; for a future production app, multiple visits by the same customer would normally be modeled as separate reservations linked to a customer account instead.
+
+## Reservation corrections — 21 October 2026
+
+- **Email field:** required, browser email format check, and a clear inline duplicate-email message returned from the REST API (HTTP 409). The existing database uniqueness rule continues to apply.
+- **Date/time:** the reservation form sets the earliest selectable datetime to the current Philippine-local minute, and blocks submissions with past or missing date/time. The backend continues to reject past reservations.
+- **Name-based visible IDs:** confirmed reservations have a `display_code` in the form `JD-001` for John Doe. This code uses the initials of the first and last name and the smallest positive sequence unused by **currently confirmed** reservations with those initials. The internal numeric primary key `id` remains unchanged for API routes and referential integrity. Cancelling a reservation keeps its historical record but releases its display code (sets it to NULL); the code can be reused on a future booking. Codes are not regenerated when editing the customer's name. Duplicate customer initials use independent sequences, and allocation is serialized with a MySQL row lock. Previously cancelled reservations may show their internal numeric IDs as a fallback in Manage Reservations.
+- **Admin access display:** search, filters, and records are hidden until a successful authenticated load. Changing the API key immediately hides and clears records; failed attempts leave results hidden. API key verification continues to happen server-side on every protected request.
+
+### Required MySQL upgrade (existing projects only)
+1. **Back up your MySQL database.**
+2. Run the SQL file `db/migrations/002_reservation_display_codes.sql` once (do not rerun its ALTER TABLE statement). It adds the `display_code` column and allocator lock table.
+3. Run `node scripts/backfill-display-codes.js` from the project root after updating `.env` to assign codes to previously confirmed reservations.
+4. Restart your Node server with `npm start`.
+
+**Important:** Until the migration is applied, the updated reservation API cannot load `display_code`, and management queries will fail. A cancelled record retains its original database ID, but its visible display code becomes available for reuse. This is not a deletion of historical reservation data. Email uniqueness still applies to cancelled records; it does not reset when their visible code is released.
+
+### Suggested regression checks
+Try one-name validation, duplicate email validation, previous-day selection, two bookings named John Doe (JD-001, JD-002), cancel JD-001 and create another John Doe booking (JD-001), change a valid admin key to an invalid one (records instantly disappear), and verify search/filter controls are hidden until the next successful authorized load. Run `npm test` and check these scenarios against your own MySQL setup; these database scenarios have not been executed in this environment.
