@@ -135,3 +135,15 @@ Test by creating one reservation, attempting a second reservation with the same 
 
 ### Suggested regression checks
 Try one-name validation, duplicate email validation, previous-day selection, two bookings named John Doe (JD-001, JD-002), cancel JD-001 and create another John Doe booking (JD-001), change a valid admin key to an invalid one (records instantly disappear), and verify search/filter controls are hidden until the next successful authorized load. Run `npm test` and check these scenarios against your own MySQL setup; these database scenarios have not been executed in this environment.
+
+## Global reservation number sequence (October 21 update)
+
+**Rule:** The numeric suffix is global across all names, not per initials. John Doe = `JD-001`, Mary Jane = `MJ-002`. If JD-001 is cancelled, the next new reservation (for example, Edgardo Jorge) receives `EJ-001`, while MJ-002 remains unchanged. Without released numbers, the next number increases (003, 004, ...). If several numbers are released, the **most recently cancelled** number is reused first (last-in, first-out). No two active reservations receive the same suffix. The numeric database primary key remains stable, and cancelled bookings remain in history with a NULL display code.
+
+### Existing database upgrade (XAMPP/phpMyAdmin)
+1. Back up the database and **stop the Node server** to prevent writes.
+2. Import `db/migrations/003_global_reservation_sequence.sql` through phpMyAdmin (after migration 002, if not already applied).
+3. Run `node scripts/backfill-display-codes.js` in your project folder. This **renumbers all existing active codes**, in order of the internal numeric reservation ID, as one global sequence; older visible codes can change. Keep the server stopped until this completes.
+4. Run `npm test`, restart with `npm start`, then check `SELECT id,display_code,status FROM reservations ORDER BY id;`.
+
+Do **not** rerun the backfill after new cancellations/bookings: it is a one-time transition tool and resets the released-number stack. A stable historical reference should use internal numeric `id`, since reused display codes do not uniquely identify historic cancelled records.
